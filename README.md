@@ -1,5 +1,5 @@
 # Obfuscated-Keylogger-In-C
-Literally an obfuscated keylogger in C. Test out your cybersecurity skills, build on it. Just don't commit a crime with it
+An obfuscated keylogger built in C. Test out your cybersecurity skills, build and share
 
 
 
